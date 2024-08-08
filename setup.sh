@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
-
 # Function to check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
-
 # Determine the correct docker compose command
 if command_exists docker-compose; then
     DOCKER_COMPOSE="docker-compose"
@@ -14,7 +12,6 @@ else
     echo "Error: Neither docker-compose nor docker compose is available."
     exit 1
 fi
-
 # Function to validate domain name
 validate_domain() {
     if [[ $1 =~ ^([a-zA-Z0-9](([a-zA-Z0-9-]){0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$ ]]; then
@@ -23,12 +20,10 @@ validate_domain() {
         return 1
     fi
 }
-
 # Function to set up the configuration
 setup() {
     echo "Setting up configuration..."
-    
-    # Prompt for domain name
+        # Prompt for domain name
     while true; do
         read -p "Enter your domain name: " domain
         if validate_domain "$domain"; then
@@ -37,10 +32,8 @@ setup() {
             echo "Invalid domain name. Please try again."
         fi
     done
-
     # Create directories
     mkdir -p certbot/conf certbot/www
-
     # Create docker-compose.yml
     cat > docker-compose.yml << EOL
 services:
@@ -54,7 +47,6 @@ services:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
     command: "/bin/sh -c 'while :; do sleep 6h & wait \$\${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
-
   certbot:
     image: certbot/certbot
     volumes:
@@ -62,13 +54,11 @@ services:
       - ./certbot/www:/var/www/certbot
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait \$\${!}; done;'"
 EOL
-
     # Create nginx.conf
     cat > nginx.conf << EOL
 events {
     worker_connections 1024;
 }
-
 http {
     server {
         listen 80;
@@ -76,26 +66,22 @@ http {
 #        location / {
 #            return 301 https://\$host\$request_uri;
 #        }
-
         location /.well-known/acme-challenge/ {
             root /var/www/certbot;
         }
     }
-
 #    server {
 #        listen 443 ssl;
 #        server_name $domain;
-
 #        ssl_certificate /etc/letsencrypt/live/$domain/fullchain.pem;
 #        ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
-
 #        location / {
-#             proxy_pass http://localhost:3000;
+#             proxy_pass http://172.17.0.1:3000;
 #             proxy_http_version 1.1;
-#             proxy_set_header Upgrade $http_upgrade;
+#             proxy_set_header Upgrade \$http_upgrade;
 #             proxy_set_header Connection 'upgrade';
-#             proxy_set_header Host $host;
-#             proxy_cache_bypass $http_upgrade;
+#             proxy_set_header Host \$host;
+#             proxy_cache_bypass \$http_upgrade;
 #        }
 #
 #        location / {
@@ -105,10 +91,8 @@ http {
 #    }
 }
 EOL
-
     echo "Configuration files created successfully."
 }
-
 # Function to certify
 certify() {
     # Prompt for domain name
@@ -120,7 +104,6 @@ certify() {
             echo "Invalid domain name. Please try again."
         fi
     done
-
     # Prompt for email address
     while true; do
         read -p "Enter your email address: " email
@@ -130,20 +113,16 @@ certify() {
             echo "Invalid email address. Please try again."
         fi
     done
-
     echo "Ensuring nginx container is running..."
     $DOCKER_COMPOSE up -d nginx
-
     # Add a delay to ensure nginx is fully up
     echo "Waiting for nginx to start..."
     sleep 10
-
     echo "Requesting new SSL certificate..."
     $DOCKER_COMPOSE run --rm --entrypoint "\
       certbot certonly --webroot --webroot-path /var/www/certbot \
       --email "$email" --agree-tos --no-eff-email \
       -d "$domain"" certbot
-
     if [ $? -eq 0 ]; then
         echo "Certificate successfully obtained!"
         echo "Restarting nginx to apply the new certificate..."
@@ -155,7 +134,6 @@ certify() {
         $DOCKER_COMPOSE logs certbot
     fi
 }
-
 # Function to perform a dry run of the certify process
 certify_dryrun() {
     # Prompt for domain name
@@ -167,7 +145,6 @@ certify_dryrun() {
             echo "Invalid domain name. Please try again."
         fi
     done
-
     # Prompt for email address
     while true; do
         read -p "Enter your email address: " email
@@ -177,21 +154,16 @@ certify_dryrun() {
             echo "Invalid email address. Please try again."
         fi
     done
-
     echo "Ensuring nginx container is running..."
     $DOCKER_COMPOSE up -d nginx
-
     # Add a delay to ensure nginx is fully up
     echo "Waiting for nginx to start..."
     sleep 10
-
     echo "Performing dry run of SSL certificate request..."
-
     $DOCKER_COMPOSE run --rm --entrypoint "\
       certbot certonly --webroot --webroot-path /var/www/certbot \
       --email "$email" --agree-tos --no-eff-email \
       -d "$domain" --dry-run" certbot
-
     if [ $? -eq 0 ]; then
         echo "Dry run completed successfully. You should be able to obtain a real certificate."
     else
@@ -201,26 +173,22 @@ certify_dryrun() {
         $DOCKER_COMPOSE logs certbot
     fi
 }
-
 # Function to run containers
 run() {
     echo "Starting containers..."
     $DOCKER_COMPOSE up -d
 }
-
 # Function to restart containers
 restart() {
     echo "Restarting containers..."
     $DOCKER_COMPOSE restart nginx
     $DOCKER_COMPOSE restart certbot
 }
-
 # Function to stop containers
 stop() {
     echo "Stopping containers..."
     $DOCKER_COMPOSE down
 }
-
 # Main menu
 while true; do
     echo "
@@ -241,11 +209,10 @@ while true; do
 7. Exit
 "
     read -p "Enter your choice: " choice
-    
-    case $choice in
+        case $choice in
         1) setup ;;
         2) certify_dryrun ;;
-        3) run ;; 
+        3) run ;;
         4) restart ;;
         5) stop ;;
         6) certify ;;
