@@ -34,63 +34,14 @@ setup() {
     done
     # Create directories
     mkdir -p certbot/conf certbot/www
+    
     # Create docker-compose.yml
-    cat > docker-compose.yml << EOL
-services:
-  nginx:
-    image: nginx:latest
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    command: "/bin/sh -c 'while :; do sleep 6h & wait \$\${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
-  certbot:
-    image: certbot/certbot
-    volumes:
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait \$\${!}; done;'"
-EOL
+    curl -fsSL -o docker-compose.yml https://raw.githubusercontent.com/Nibble-A-Bit/nginx-ssl/main/docker-compose.yml
+    
     # Create nginx.conf
-    cat > nginx.conf << EOL
-events {
-    worker_connections 1024;
-}
-http {
-    server {
-        listen 80;
-        server_name $domain;
-#        location / {
-#            return 301 https://\$host\$request_uri;
-#        }
-        location /.well-known/acme-challenge/ {
-            root /var/www/certbot;
-        }
-    }
-#    server {
-#        listen 443 ssl;
-#        server_name $domain;
-#        ssl_certificate /etc/letsencrypt/live/$domain/fullchain.pem;
-#        ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
-#        location / {
-#             proxy_pass http://172.17.0.1:3000;
-#             proxy_http_version 1.1;
-#             proxy_set_header Upgrade \$http_upgrade;
-#             proxy_set_header Connection 'upgrade';
-#             proxy_set_header Host \$host;
-#             proxy_cache_bypass \$http_upgrade;
-#        }
-#
-#        location / {
-#            root /usr/share/nginx/html;
-#            index index.html;
-#        }
-#    }
-}
-EOL
+    curl -fsSL -o nginx.conf https://raw.githubusercontent.com/Nibble-A-Bit/nginx-ssl/main/nginx.conf
+    sed 's/$domain/'$domain'/' nginx.conf -i
+
     echo "Configuration files created successfully."
 }
 # Function to certify
