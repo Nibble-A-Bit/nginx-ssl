@@ -67,8 +67,6 @@ certify() {
     echo "Ensuring nginx container is running..."
     $DOCKER_COMPOSE up -d nginx
     # Add a delay to ensure nginx is fully up
-    echo "Waiting for nginx to start..."
-    sleep 10
     echo "Requesting new SSL certificate..."
     $DOCKER_COMPOSE run --rm --entrypoint "\
       certbot certonly --webroot --webroot-path /var/www/certbot \
@@ -108,8 +106,6 @@ certify_dryrun() {
     echo "Ensuring nginx container is running..."
     $DOCKER_COMPOSE up -d nginx
     # Add a delay to ensure nginx is fully up
-    echo "Waiting for nginx to start..."
-    sleep 10
     echo "Performing dry run of SSL certificate request..."
     $DOCKER_COMPOSE run --rm --entrypoint "\
       certbot certonly --webroot --webroot-path /var/www/certbot \
